@@ -1,0 +1,5 @@
+{
+  "name": "AI-Accelerated RISC-V Processor Extension Showcase",
+  "description": "An interactive web application showcasing a custom RISC-V processor with ISA extensions for neural network operations. Features an AI-powered C++ to custom assembly code generator.",
+  "requestFramePermissions": []
+}

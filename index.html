@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI-Accelerated RISC-V Processor Extension</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Prism.js CSS for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" integrity="sha512-mIs9kKbaw6JZFfSuo+MovJHGJDRdoMmNJcsKBLDKflPq3IYwZWweOrGNlfECELsQBHcBwgQorgbGDobQLhGjvA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      /* Ensure highlighted code background matches the theme */
+      pre[class*="language-"] {
+        background: #1e293b !important; /* bg-slate-800 */
+        border-color: #334155 !important; /* border-slate-600 */
+        border-width: 1px;
+      }
+      /* Fade-in animation for view transitions */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+      }
+      /* Animation for pipeline flush visualization */
+      @keyframes flashRed {
+        0%, 100% { background-color: rgba(127, 29, 29, 0.3); border-color: #ef4444; }
+        50% { background-color: rgba(127, 29, 29, 0.5); border-color: #f87171; }
+      }
+      .animate-flash-red {
+        animation: flashRed 0.5s ease-in-out;
+      }
+      /* Animation for pipeline stall visualization */
+      @keyframes flashYellow {
+        0%, 100% { background-color: rgba(234, 179, 8, 0.3); border-color: #facc15; }
+        50% { background-color: rgba(234, 179, 8, 0.5); border-color: #fde047; }
+      }
+      .animate-flash-yellow {
+        animation: flashYellow 0.6s ease-in-out;
+      }
+      /* Animation for data forwarding visualization */
+      @keyframes flashCyan {
+        0%, 100% { border-color: #22d3ee; background-color: rgba(6, 78, 90, 0.3); }
+        50% { border-color: #67e8f9; background-color: rgba(6, 78, 90, 0.5); }
+      }
+      .animate-flash-cyan {
+        animation: flashCyan 0.7s ease-in-out;
+      }
+       /* Animation for memory read/register writeback visualization */
+      @keyframes flashGreen {
+        0%, 100% { background-color: rgba(16, 122, 87, 0.3); border-color: #34d399; }
+        50% { background-color: rgba(16, 122, 87, 0.5); border-color: #6ee7b7; }
+      }
+      .animate-flash-green {
+        animation: flashGreen 0.7s ease-in-out;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0",
+    "recharts": "https://aistudiocdn.com/recharts@^2.12.7"
+  }
+}
+</script>
+</head>
+  <body class="bg-slate-900">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+
+    <!-- Prism.js JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js" integrity="sha512-9khQRAUBomGPXJFqtUotJTgybR6UAjXZ8adLKRUuzgTDrkClcr76rNzgrsHlo6YPUiXoGfkZfU5YAQcWNoQIEFw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js" integrity="sha512-S_TWOIHl2QwpKdaDraA09M4gb2OWUfG1e6ETeIYs6dJrkcM6br2ol2s83DGTsWH6pmfC79K2zLq240zKAahUvA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  </body>
+</html>
