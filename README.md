@@ -14,8 +14,7 @@ This project is an interactive web application that showcases a complete hardwar
 The showcase features a suite of powerful, AI-driven tools, including a C++ to custom assembly compiler and an RTL generator, all powered by the Google Gemini API.
 
 ## 🚀 Live Demo
-
-[**A live version of the showcase can be accessed here.**](https://example.com) *(Note: Placeholder link)*
+https://ai-accelerated-risc-v-processor-extension-showcas-166398002776.us-west1.run.app
 
 ---
 
