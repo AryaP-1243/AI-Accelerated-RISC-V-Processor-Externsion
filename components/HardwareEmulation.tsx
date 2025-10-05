@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { Section } from './Section';
 import { SignalIcon } from './icons/SignalIcon';
@@ -376,8 +377,9 @@ export const HardwareEmulation: React.FC = () => {
             const cachePenaltyCycles = cacheMisses * profile.l1_miss_penalty_cycles;
             totalCycles += cachePenaltyCycles;
 
-            const branchMispredicts = branchCount * (1 - profile.branch_predictor_accuracy);
-            const branchPenaltyCycles = branchMispredicts * profile.branch_mispredict_penalty_cycles;
+            // FIX: Explicitly cast operands to Number to ensure correct arithmetic operations.
+            const branchMispredicts = Number(branchCount) * (1 - Number(profile.branch_predictor_accuracy));
+            const branchPenaltyCycles = Number(branchMispredicts) * Number(profile.branch_mispredict_penalty_cycles);
             totalCycles += branchPenaltyCycles;
             
             const clockMhz = isHw ? profile.riscv_clk_mhz : profile.arm_clk_mhz;
@@ -396,11 +398,12 @@ export const HardwareEmulation: React.FC = () => {
         const speedup = sw.latencyMs / hw.latencyMs;
         const energyEfficiency = sw.totalEnergyMj / hw.totalEnergyMj;
         
-        const totalOperations = Object.values(instructionMix).reduce((sum: number, count: number) => sum + count, 0);
+        // FIX: Add explicit types to the reduce function's parameters to prevent potential type errors with strict settings.
+        const totalOperations = Object.values(instructionMix).reduce((sum: number, count: number) => sum + Number(count), 0);
         const hwLatencyS = hw.latencyMs / 1000;
         const swLatencyS = sw.latencyMs / 1000;
-        const hwThroughput = hwLatencyS > 0 ? totalOperations / hwLatencyS : 0;
-        const swThroughput = swLatencyS > 0 ? totalOperations / swLatencyS : 0;
+        const hwThroughput = hwLatencyS > 0 ? Number(totalOperations) / hwLatencyS : 0;
+        const swThroughput = swLatencyS > 0 ? Number(totalOperations) / swLatencyS : 0;
 
         return { hw, sw, speedup, energyEfficiency, hwThroughput, swThroughput };
     }, [instructionMix, profile]);
@@ -487,12 +490,22 @@ export const HardwareEmulation: React.FC = () => {
                                 </ul>
                             </li>
                              <li>
-                                <strong className="text-slate-300">Performance & Energy Projection:</strong>
+                                <strong className="text-slate-300">Performance & Power Modeling:</strong>
                                 <ul className="list-disc list-inside pl-4 mt-2 space-y-1">
-                                    <li><strong>Latency (ms):</strong> Total cycles are divided by the selected clock frequency (e.g., 125 MHz) to calculate the execution time.</li>
-                                    <li><strong>Dynamic Energy (mJ):</strong> The energy for each instruction is calculated (instruction count × cycles per instruction × energy per cycle). The energy for DRAM accesses during cache misses is also added.</li>
-                                    <li><strong>Static Energy (mJ):</strong> The board's static power (leakage) is multiplied by the total execution time.</li>
-                                    <li><strong>Total Energy:</strong> The final energy is the sum of dynamic and static energy.</li>
+                                    <li><strong>Latency (ms):</strong> The total calculated cycles are divided by the selected clock frequency (e.g., 125 MHz for the RISC-V core) to determine the final execution time.</li>
+                                    <li>
+                                        <strong>Dynamic Energy (mJ):</strong> This is the energy consumed by switching transistors during computation.
+                                        <ul className="list-['-_'] list-inside pl-4 mt-1 space-y-1">
+                                            <li><strong className="text-cyan-400/80">Hardware Core:</strong> Calculated on a per-instruction basis. The model sums the energy for every single instruction executed (e.g., `mac` count × `mac` cycles × `mac` energy/cycle). It also adds the energy penalty for external DRAM accesses caused by cache misses.</li>
+                                            <li><strong className="text-slate-300/80">Software Core:</strong> Modeled by multiplying the total equivalent cycles by an average energy-per-cycle value for the ARM core. This provides a realistic baseline for a standard processor's computational energy.</li>
+                                        </ul>
+                                    </li>
+                                    <li>
+                                        <strong>Static Energy (mJ):</strong> This is the energy consumed by transistor leakage, even when the processor is idle. It's calculated by multiplying the board's static power rating (e.g., 100 mW) by the total execution time. Longer execution times result in higher static energy consumption.
+                                    </li>
+                                    <li>
+                                        <strong>Total Energy (mJ):</strong> The final energy projection is the sum of the dynamic energy (from computation) and the static energy (from leakage over time). A faster core not only reduces dynamic energy with efficient instructions but also significantly cuts static energy by finishing the task sooner.
+                                    </li>
                                 </ul>
                             </li>
                         </ol>

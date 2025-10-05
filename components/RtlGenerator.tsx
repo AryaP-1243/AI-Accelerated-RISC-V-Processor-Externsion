@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { generateRtlStream, generateRtlExplanation, AiResponseError, RtlGenerationResult } from '../services/geminiService';
 import { XIcon } from './icons/XIcon';
@@ -57,67 +56,136 @@ type RtlExample = {
   parameters?: Parameter[];
 };
 
+type RtlExampleCategory = {
+    category: string;
+    examples: RtlExample[];
+};
+
 type RtlTab = 'rtl' | 'testbench' | 'netlist' | 'sva';
 
-const rtlExamples: RtlExample[] = [
-  { 
-    name: 'N-bit Counter', 
-    description: 'A {WIDTH}-bit synchronous counter with enable and active-high {RESET_TYPE} reset.',
-    parameters: [
-        { name: 'WIDTH', label: 'Bit Width', type: 'number', defaultValue: 4 },
-        { name: 'RESET_TYPE', label: 'Reset Type', type: 'select', defaultValue: 'asynchronous', options: ['asynchronous', 'synchronous'] }
+const rtlExamples: RtlExampleCategory[] = [
+  {
+    category: "Basic Hardware & Interfaces",
+    examples: [
+      { name: "32-Bit Adder Module", description: "Generate a SystemVerilog module for a 32-bit ripple-carry adder." },
+      { name: "N-Bit Adder (Parameterized)", description: "Generate a parameterized SystemVerilog module for an N-bit ripple-carry adder.", parameters: [{ name: 'WIDTH', label: 'Bit Width', type: 'number', defaultValue: 16 }] },
+      { name: "8-Bit Left Shift Register", description: "Write a SystemVerilog module for an 8-bit left-shift register." },
+      { name: "16-Bit Counter (Async Reset)", description: "Generate a SystemVerilog module for a 16-bit counter with an asynchronous active-high reset." },
+      { name: "Synchronous Up/Down Counter", description: "Create a 4-bit synchronous up/down counter with load and enable signals." },
+      { name: "4-to-1 Multiplexer", description: "Create a 4-to-1 multiplexer in SystemVerilog using a case statement." },
+      { name: "8-to-1 Demultiplexer", description: "Create an 8-to-1 demultiplexer." },
+      { name: "2-to-4 Decoder", description: "Write a 2-to-4 binary decoder module in SystemVerilog." },
+      { name: "32x32 Register File", description: "Generate a synthesizable SystemVerilog module for a 32x32 register file with two read ports and one write port." },
+      { name: "FSM (Sequence 101)", description: "Create a SystemVerilog Moore FSM that detects the sequence '101'." },
+      { name: "FSM (Traffic Light)", description: "Design a finite state machine for a simple traffic light controller." },
+      { name: "UART Receiver", description: "Generate a basic UART receiver module." },
+      { name: "UART Transmitter", description: "Generate a basic UART transmitter module." },
+      { name: "SPI Master Controller", description: "Create a simple SPI master controller." },
+      { name: "I2C Slave Controller", description: "Design a simple I2C slave controller with a single data register." },
+      { name: "Basic Memory Controller", description: "Generate a simple memory controller for an SRAM chip." },
+      { name: "Simple AXI4-Lite Slave", description: "Create a basic AXI4-Lite slave with a few read/write registers." },
+      { name: "Basic FIFO Buffer", description: "Design a synchronous FIFO buffer with full and empty flags." },
+      { name: "Synchronous Dual-Port RAM", description: "Generate a synchronous dual-port RAM (1 Write, 1 Read)." },
+      { name: "Asynchronous Dual-Port RAM", description: "Generate an asynchronous dual-port RAM (1 Write, 1 Read)." },
+      { name: "Clock Divider (Div by 2)", description: "Create a SystemVerilog module that generates a clock signal at half the input frequency." },
+      { name: "Clock Divider (Parameterized)", description: "Generate a parameterized clock divider.", parameters: [{ name: 'DIVISOR', label: 'Divisor', type: 'number', defaultValue: 4 }] },
+      { name: "JTAG Controller Module", description: "Design a simplified JTAG Test Access Port (TAP) controller FSM." },
+      { name: "Debouncer Circuit", description: "Generate a SystemVerilog module that debounces a single push-button input." },
+      { name: "8-Bit Multiplier (Combinational)", description: "Create an 8-bit combinational array multiplier." },
+      { name: "8-Bit Multiplier (Pipelined)", description: "Create a pipelined 8-bit multiplier for higher throughput." },
+      { name: "CRC32 Generator", description: "Generate a CRC32 calculation module." },
+      { name: "LFSR-Based Randomizer", description: "Design a Linear Feedback Shift Register for pseudo-random number generation." },
+      { name: "Gray Code Counter", description: "Create a 4-bit Gray code counter." },
+      { name: "Priority Encoder (8-to-3)", description: "Generate an 8-to-3 priority encoder." },
+      { name: "Round-Robin Bus Arbitrator", description: "Design a 4-way round-robin bus arbitrator." },
+      { name: "Priority Arbiter", description: "Design a 4-way fixed-priority arbiter." },
+      { name: "Glitch-Free Clock Switch", description: "Create a glitch-free clock switching circuit." },
+      { name: "Simple PWM Generator", description: "Generate a simple Pulse Width Modulation (PWM) signal generator." },
+      { name: "Quadrature Encoder", description: "Design a module to read from a quadrature encoder." },
+      { name: "Data Serializer", description: "Create a parallel-to-serial data serializer." },
+      { name: "Data Deserializer", description: "Create a serial-to-parallel data deserializer." },
+      { name: "Error Correction Module (Hamming)", description: "Generate a (7,4) Hamming code encoder and decoder." },
+      { name: "Parity Generator", description: "Design an 8-bit even parity generator." },
+      { name: "Parity Checker", description: "Design an 8-bit even parity checker." },
     ]
   },
-  { 
-    name: 'N-bit ALU', 
-    description: 'A simple {WIDTH}-bit ALU that can perform AND, OR, ADD, and SUB operations based on a 2-bit opcode.',
-    parameters: [
-        { name: 'WIDTH', label: 'Bit Width', type: 'number', defaultValue: 8 }
+  {
+    category: "AI Hardware Accelerators",
+    examples: [
+      { name: "Conv2d 3x3 Hardware", description: "Create a SystemVerilog module for the custom conv2d.3x3 instruction logic." },
+      { name: "MAC Array 8x8", description: "Generate the SystemVerilog for an 8x8 array of MAC (multiply-accumulate) units for the custom 'mac' instruction." },
+      { name: "ReLU Unit (Int8)", description: "Design a SystemVerilog module for the custom relu instruction, including 8-bit signed integer support." },
+      { name: "Max Pool 2x2 Hardware", description: "Create a hardware unit for a 2x2 max pooling operation." },
+      { name: "Average Pool 2x2 Hardware", description: "Create a hardware unit for a 2x2 average pooling operation." },
+      { name: "Custom Vector Add Unit", description: "Design a 4-element, 16-bit vector addition unit." },
+      { name: "Custom Vector Mul Unit", description: "Design a 4-element, 16-bit vector multiplication unit." },
+      { name: "Quantizer Hardware (Int16 to Int8)", description: "Create a SystemVerilog module that performs 16-bit to 8-bit integer quantization." },
+      { name: "Dequantizer Hardware", description: "Create a hardware module for dequantization from Int8 to Float16." },
+      { name: "Small Neural Network Layer", description: "Design a SystemVerilog module for a complete, small neural network layer (e.g., convolution + ReLU)." },
+      { name: "DataPath for AI Instruction", description: "Generate the SystemVerilog for the data path of the AI-accelerated RISC-V processor." },
+      { name: "Control Logic for Conv2d", description: "Write the SystemVerilog for the control logic to handle the custom conv2d instruction." },
+      { name: "Control Logic for MAC", description: "Write the SystemVerilog for the control logic of the MAC unit." },
+      { name: "Control Logic for ReLU", description: "Write the SystemVerilog for the control logic of the ReLU unit." },
+      { name: "Memory Interface for AI", description: "Generate a SystemVerilog module for a simple memory interface optimized for loading AI model parameters." },
+      { name: "Weight Buffer Hardware", description: "Design a double-buffered memory for storing neural network weights." },
+      { name: "Activation Buffer Hardware", description: "Design a ping-pong buffer for streaming neural network activations." },
+      { name: "Custom AI Instruction Decoder", description: "Create a decoder for a custom set of AI instructions." },
+      { name: "AI Instruction Pipeline Stage", description: "Create the SystemVerilog for a new pipeline stage to execute the custom AI instructions." },
+      { name: "Simple Image Processor", description: "Design a simple image processing pipeline (e.g., filter -> activation)." },
+      { name: "DSP Slice-Based Accelerator", description: "Create a module optimized for FPGA DSP slices." },
+      { name: "FPGA-Optimized Conv2d", description: "Generate a Conv2d module optimized for Xilinx FPGA architecture." },
+      { name: "Tensor Core-Like Unit", description: "Design a simplified tensor core unit for 4x4 matrix operations." },
+      { name: "Integer-Only NN Core", description: "Create a complete integer-only neural network inference core." },
+      { name: "Hardware Scheduler for AI", description: "Generate a module that can schedule AI workload tasks onto the custom accelerators." },
+      { name: "AI Interrupt Controller", description: "Design an interrupt controller for the AI accelerator." },
+      { name: "Power Gating for AI Core", description: "Implement power gating control logic for the AI core." },
+      { name: "Fused Conv-ReLU Hardware", description: "Design a module that fuses convolution and ReLU operations." },
+      { name: "Fused MM-Bias Hardware", description: "Design a module that fuses matrix multiplication and bias addition." },
+      { name: "Small FPGA NN Demo", description: "Create a small end-to-end neural network demo for an FPGA." },
+      { name: "Simple Object Detection Core", description: "Design a simplified core for object detection (e.g., part of a YOLO pipeline)." },
+      { name: "Memory Bandwidth Optimizer for AI", description: "Design a memory controller that optimizes bandwidth for AI workloads." },
+      { name: "On-Chip Memory for AI", description: "Design a specialized on-chip memory system for AI." },
+      { name: "Custom Activation Function", description: "Implement a hardware module for a custom activation function (e.g., Leaky ReLU)." },
+      { name: "Hardware for Attention Mechanism", description: "Design a simplified hardware block for a Transformer attention mechanism." },
+      { name: "Layer Normalization Hardware", description: "Create a hardware module for layer normalization." },
+      { name: "RMS Normalization Hardware", description: "Create a hardware module for RMS normalization." },
+      { name: "SystemVerilog for Small Transformer", description: "Design a small Transformer block in SystemVerilog." },
+      { name: "Mixed-Precision Arithmetic Unit", description: "Design an arithmetic unit that supports mixed-precision operations (e.g., INT8 x INT4)." },
+      { name: "Hardware for Sparse Matrix Ops", description: "Create a hardware module for sparse matrix operations." },
+      { name: "Vector Gather/Scatter Hardware", description: "Design a hardware unit for vector gather/scatter memory operations." },
+      { name: "Vector Masked Ops Hardware", description: "Implement hardware for masked vector operations." },
+      { name: "Dynamic-Precision Accelerator", description: "Design an accelerator that supports dynamic precision." },
+      { name: "Streaming AI Processor", description: "Create a streaming processor for AI data." },
+      { name: "Efficient Data Mover for AI", description: "Design an efficient DMA-like data mover for AI tensors." },
+      { name: "Weight Compression/Decompression", description: "Implement hardware for weight compression and decompression." },
+      { name: "Systolic Array for MAC", description: "Generate a 4x4 systolic array for matrix multiplication." },
+      { name: "Simple Convolutional Engine", description: "Design a simple, self-contained convolutional engine." },
+      { name: "Hardware for RNN Cell", description: "Create a hardware implementation of a simple Recurrent Neural Network (RNN) cell." },
+      { name: "Hardware for GRU Cell", description: "Design a hardware module for a Gated Recurrent Unit (GRU) cell." },
+      { name: "Hardware for LSTM Cell", description: "Design a hardware module for a Long Short-Term Memory (LSTM) cell." },
+      { name: "Hardware for Graph Neural Network", description: "Create a simplified hardware accelerator for a Graph Neural Network layer." },
+      { name: "Hardware for K-Means Clustering", description: "Design a hardware module to accelerate K-Means clustering." },
+      { name: "Hardware for Reinforcement Learning", description: "Create a hardware module for a simple reinforcement learning algorithm." },
+      { name: "Hardware for Genetic Algorithm", description: "Design a hardware accelerator for a simple genetic algorithm." },
+      { name: "Hardware for Tree-Based Model", description: "Create a hardware module for a simple decision tree model." },
+      { name: "Hardware for Support Vector Machine", description: "Design a hardware accelerator for a Support Vector Machine." },
+      { name: "Hardware for K-Nearest Neighbor", description: "Create a hardware module for the K-Nearest Neighbor algorithm." },
+      { name: "Hardware for Decision Tree", description: "Design a hardware module for executing a decision tree." },
+      { name: "Hardware for Naive Bayes", description: "Create a hardware accelerator for the Naive Bayes algorithm." },
     ]
-  },
-  { 
-    name: 'N-bit Shift Register', 
-    description: 'A {WIDTH}-bit serial-in, parallel-out (SIPO) shift register with a left shift operation.',
-    parameters: [
-        { name: 'WIDTH', label: 'Bit Width', type: 'number', defaultValue: 8 }
-    ]
-  },
-  { name: 'D Flip-Flop', description: 'A simple D flip-flop with an active-high asynchronous reset.' },
-  { name: '4-to-1 MUX', description: 'A 4-to-1 multiplexer using a case statement.' },
-  { name: 'Full Adder', description: 'A 1-bit full adder using combinational logic.' },
-  { 
-    name: 'FIFO Buffer', 
-    description: 'A {DEPTH}-deep, {WIDTH}-bit wide synchronous FIFO buffer with empty and full flags, using pointers for read and write operations.',
-    parameters: [
-        { name: 'DEPTH', label: 'Depth', type: 'number', defaultValue: 16 },
-        { name: 'WIDTH', label: 'Data Width', type: 'number', defaultValue: 8 }
-    ]
-  },
-  { name: 'SPI Master', description: 'A basic SPI master interface controller with CPOL=0, CPHA=0.' },
-  { name: 'UART Transmitter', description: 'A simplified UART transmitter module.' },
-  { name: 'I2C Controller', description: 'A basic I2C master controller for single byte read/write operations.' },
-  { name: 'Traffic Light FSM (Moore)', description: 'A Moore finite state machine for a simple North-South/East-West traffic light controller.' },
-  { name: 'Traffic Light FSM (Mealy)', description: 'A Mealy finite state machine for a simple North-South/East-West traffic light controller with a pedestrian crosswalk request input.' },
-  { name: 'Debouncer', description: 'A debouncing circuit for a push-button input using a counter.' },
-  { name: 'Gray Code Converter', description: 'A 4-bit binary to Gray code converter.' },
-  { name: 'Priority Encoder', description: 'An 8-to-3 priority encoder.' },
-  { name: 'Barrel Shifter', description: 'An 8-bit combinational barrel shifter (logical left shift).' },
-  { name: 'Hamming Code (7,4) Encoder', description: 'A Hamming code encoder for a 4-bit data input, generating 3 parity bits.' },
-  { name: 'Sequence Detector (1011)', description: 'An FSM to detect the overlapping sequence "1011" in a serial bitstream.' },
-  { name: 'N-bit Register', description: 'A simple {WIDTH}-bit register with a write enable signal.', parameters: [{ name: 'WIDTH', label: 'Bit Width', type: 'number', defaultValue: 8 }] },
-  { name: 'AXI4-Lite Slave', description: 'A basic AXI4-Lite slave interface with one read/write register.' },
-  { name: 'Clock Divider', description: 'A clock divider that divides the input clock frequency by {DIVISOR}.', parameters: [{ name: 'DIVISOR', label: 'Divisor', type: 'number', defaultValue: 2 }] },
-  { name: 'Dual-Port RAM', description: 'A simple dual-port RAM with {DEPTH} words of {WIDTH} bits each.', parameters: [{ name: 'DEPTH', label: 'Depth', type: 'number', defaultValue: 64 }, { name: 'WIDTH', label: 'Width', type: 'number', defaultValue: 8 }] },
-  { name: 'Carry-Lookahead Adder', description: 'A 4-bit carry-lookahead adder.' },
-  { name: 'Sequential Multiplier', description: 'An 8-bit sequential multiplier using a shift-and-add algorithm.' },
-  { name: 'Round-Robin Arbiter', description: 'A 4-request round-robin arbiter.' },
-  { name: 'LFSR', description: 'An 8-bit Linear Feedback Shift Register with a maximal-length polynomial.' },
-  { name: 'BRAM Interface', description: 'A simple block RAM interface controller.' },
-  { name: 'PWM Generator', description: 'A Pulse Width Modulation (PWM) generator with a configurable duty cycle.' },
+  }
 ];
 
+const findExample = (name: string): RtlExample | undefined => {
+    for (const category of rtlExamples) {
+        const example = category.examples.find(ex => ex.name === name);
+        if (example) return example;
+    }
+    return undefined;
+};
+
 export const RtlGenerator: React.FC = () => {
-    const [activeExampleName, setActiveExampleName] = useState(rtlExamples[0].name);
+    const [activeExampleName, setActiveExampleName] = useState(rtlExamples[0].examples[0].name);
     const [parameters, setParameters] = useState<Record<string, string | number>>({});
     const [generatedCode, setGeneratedCode] = useState<RtlGenerationResult | null>(null);
     const [streamingOutput, setStreamingOutput] = useState('');
@@ -129,13 +197,14 @@ export const RtlGenerator: React.FC = () => {
     const [isExplaining, setIsExplaining] = useState(false);
     const [explanationError, setExplanationError] = useState<string | null>(null);
     const [explanationTarget, setExplanationTarget] = useState('');
+    const [customDescription, setCustomDescription] = useState('');
 
     const rtlCodeRef = useRef<HTMLElement>(null);
     const tbCodeRef = useRef<HTMLElement>(null);
     const netlistCodeRef = useRef<HTMLElement>(null);
     const svaCodeRef = useRef<HTMLElement>(null);
     
-    const activeExample = useMemo(() => rtlExamples.find(ex => ex.name === activeExampleName)!, [activeExampleName]);
+    const activeExample = useMemo(() => findExample(activeExampleName) || null, [activeExampleName]);
 
     const tabConfig = useMemo(() => ({
       rtl: { label: 'SystemVerilog', ref: rtlCodeRef, code: generatedCode?.rtlCode, lang: 'verilog' },
@@ -145,16 +214,29 @@ export const RtlGenerator: React.FC = () => {
     }), [generatedCode]);
 
     useEffect(() => {
-        const initialParams: Record<string, string | number> = {};
-        if (activeExample.parameters) {
-            activeExample.parameters.forEach(p => { initialParams[p.name] = p.defaultValue; });
+        if (activeExampleName === 'Custom Code') {
+            setParameters({});
+            setGeneratedCode(null);
+            setStreamingOutput('');
+            setError(null);
+            setActiveTab('rtl');
+            return;
         }
-        setParameters(initialParams);
-        setGeneratedCode(null);
-        setStreamingOutput('');
-        setError(null);
-        setActiveTab('rtl');
-    }, [activeExample]);
+
+        const example = findExample(activeExampleName);
+        if (example) {
+            const initialParams: Record<string, string | number> = {};
+            if (example.parameters) {
+                example.parameters.forEach(p => { initialParams[p.name] = p.defaultValue; });
+            }
+            setParameters(initialParams);
+            setCustomDescription('');
+            setGeneratedCode(null);
+            setStreamingOutput('');
+            setError(null);
+            setActiveTab('rtl');
+        }
+    }, [activeExampleName]);
     
     useEffect(() => {
         if (isLoading || !generatedCode || !window.Prism) return;
@@ -176,10 +258,18 @@ export const RtlGenerator: React.FC = () => {
         setGeneratedCode(null);
         setStreamingOutput('');
 
-        let finalDescription = activeExample.description;
-        Object.entries(parameters).forEach(([key, value]) => {
-            finalDescription = finalDescription.replace(`{${key}}`, String(value));
-        });
+        let finalDescription = customDescription || activeExample?.description || '';
+        if (activeExample && !customDescription) {
+            Object.entries(parameters).forEach(([key, value]) => {
+                finalDescription = finalDescription.replace(`{${key}}`, String(value));
+            });
+        }
+        
+        if (!finalDescription.trim()) {
+            setError("Please select an example or provide a custom description.");
+            setIsLoading(false);
+            return;
+        }
 
         let fullResponseText = '';
         try {
@@ -193,7 +283,7 @@ export const RtlGenerator: React.FC = () => {
             if (!result || typeof result.rtlCode !== 'string' || typeof result.testbenchCode !== 'string' || typeof result.netlistDescription !== 'string' || typeof result.svaCode !== 'string' || typeof result.validation !== 'object' || result.validation === null || typeof result.validation.hasErrors !== 'boolean' || !Array.isArray(result.validation.errors)) {
                 throw new AiResponseError("The AI service returned a response with an unexpected structure.");
             }
-            if (activeExample.name === 'FIFO Buffer') {
+            if (activeExample?.name === 'FIFO Buffer') {
                 result.svaCode = `// --- AUTO-INJECTED SYSTEMVERILOG ASSERTION FOR FIFO BUFFER ---
 // This assertion is critical for verifying the fundamental correctness of the FIFO.
 // It has been automatically added by the generator for this specific example.
@@ -231,7 +321,7 @@ a_mutual_exclusion_check: assert property (p_not_full_and_empty)
             setIsLoading(false);
             setStreamingOutput('');
         }
-    }, [activeExample, parameters]);
+    }, [activeExample, parameters, customDescription]);
     
     const handleExplainCode = useCallback(async () => {
         if (!generatedCode || isExplaining) return;
@@ -260,7 +350,7 @@ a_mutual_exclusion_check: assert property (p_not_full_and_empty)
 
 
     const renderParameterInputs = () => {
-        if (!activeExample.parameters) return null;
+        if (!activeExample || !activeExample.parameters || activeExampleName === 'Custom Code') return null;
         return (
             <div className="grid grid-cols-2 gap-4 mb-4">
                 {activeExample.parameters.map(param => (
@@ -278,21 +368,48 @@ a_mutual_exclusion_check: assert property (p_not_full_and_empty)
             </div>
         );
     };
+    
+    const renderCustomInput = () => (
+        <div className="mb-4">
+            <label htmlFor="custom-description" className="block text-sm font-medium text-slate-300 mb-2">Custom Hardware Description</label>
+            <textarea
+                id="custom-description"
+                value={customDescription}
+                onChange={(e) => {
+                    setCustomDescription(e.target.value);
+                    if (e.target.value.trim()) {
+                        setActiveExampleName('Custom Code');
+                    }
+                }}
+                className="w-full h-24 p-3 font-sans text-sm bg-slate-900 text-slate-100 rounded-md border border-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                placeholder="e.g., 'A 4-bit synchronous counter with an active-low reset and a clock enable signal.'"
+            />
+        </div>
+    );
 
     return (
         <div className="animate-fade-in" style={{animationDuration: '0.3s'}}>
             <p className="text-slate-400 mb-4">
-                Select a hardware module, customize its parameters, and let the AI generate the SystemVerilog RTL, a testbench, a conceptual netlist, and formal verification assertions.
+                This generator uses an AI model to translate high-level hardware descriptions into synthesizable SystemVerilog. Select a pre-built example, customize its parameters, or write your own description from scratch to generate the RTL, a testbench, a conceptual netlist, and formal verification assertions.
             </p>
             <div className="grid lg:grid-cols-2 gap-8">
                 <div>
                     <div className="mb-4">
                         <label htmlFor="rtl-example-select" className="block text-sm font-medium text-slate-300 mb-2">Select a Hardware Module</label>
                         <select id="rtl-example-select" value={activeExampleName} onChange={handleExampleChange} className="w-full p-3 font-mono text-sm bg-slate-900 text-slate-100 rounded-md border border-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                            {rtlExamples.map(ex => <option key={ex.name} value={ex.name}>{ex.name}</option>)}
+                           {rtlExamples.map(category => (
+                                <optgroup key={category.category} label={category.category}>
+                                    {category.examples.map(ex => (
+                                        <option key={ex.name} value={ex.name}>{ex.name}</option>
+                                    ))}
+                                </optgroup>
+                           ))}
+                           <option value="Custom Code">Custom Code...</option>
                         </select>
                     </div>
-                    {renderParameterInputs()}
+                    
+                    {activeExampleName === 'Custom Code' ? renderCustomInput() : renderParameterInputs()}
+                    
                     <div className="mt-6 text-center lg:text-left">
                         <button onClick={handleGenerate} disabled={isLoading} className="bg-cyan-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-cyan-700 disabled:bg-slate-600 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 disabled:scale-100">
                             {isLoading ? 'Generating...' : 'Generate RTL'}

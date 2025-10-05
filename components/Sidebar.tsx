@@ -1,15 +1,12 @@
 
 import React from 'react';
 import { DashboardView } from '../App';
-import { BookOpenIcon } from './icons/BookOpenIcon';
 import { ZapIcon } from './icons/ZapIcon';
 import { ChipIcon } from './icons/ChipIcon';
 import { CodeIcon } from './icons/CodeIcon';
 import { CpuIcon } from './icons/CpuIcon';
-import { DocumentTextIcon } from './icons/DocumentTextIcon';
 import { PlayIcon } from './icons/PlayIcon';
 import { MicrochipIcon } from './icons/MicrochipIcon';
-import { ChartBarIcon } from './icons/ChartBarIcon';
 
 interface SidebarProps {
   currentView: DashboardView;
@@ -17,15 +14,12 @@ interface SidebarProps {
 }
 
 const navItems = [
-    { id: 'abstract', label: 'Project Abstract', icon: <BookOpenIcon /> },
     { id: 'features', label: 'Key Features', icon: <ZapIcon /> },
     { id: 'implementation', label: 'Implementation', icon: <ChipIcon /> },
     { id: 'memory_map', label: 'Memory Map', icon: <MicrochipIcon /> },
     { id: 'compiler_optimizations', label: 'Compiler Optimizations', icon: <CpuIcon /> },
     { id: 'pipeline_visualization', label: 'Pipeline Visualizer', icon: <PlayIcon /> },
-    { id: 'hardware_emulation', label: 'Hardware Emulation', icon: <ChartBarIcon /> },
     { id: 'demo', label: 'Interactive Demos', icon: <CodeIcon /> },
-    { id: 'research_paper', label: 'Research Paper', icon: <DocumentTextIcon /> },
     { id: 'conclusion', label: 'Conclusion', icon: <ZapIcon /> },
 ];
 

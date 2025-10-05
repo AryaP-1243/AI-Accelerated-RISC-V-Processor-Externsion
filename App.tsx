@@ -8,23 +8,20 @@ import { CodeGenerator } from './components/CodeGenerator';
 import { ZapIcon } from './components/icons/ZapIcon';
 import { ChipIcon } from './components/icons/ChipIcon';
 import { CodeIcon } from './components/icons/CodeIcon';
-import { BookOpenIcon } from './components/icons/BookOpenIcon';
 import { Auth } from './components/Auth';
 import { Sidebar } from './components/Sidebar';
 import { CpuIcon } from './components/icons/CpuIcon';
-import { ResearchPaper } from './components/ResearchPaper';
-import { HardwareEmulation } from './components/HardwareEmulation';
 import { PipelineVisualizer } from './components/PipelineVisualizer';
 import { MemoryMapVisualizer } from './components/MemoryMapVisualizer';
 
 type View = 'landing' | 'auth' | 'dashboard';
-export type DashboardView = 'abstract' | 'features' | 'implementation' | 'memory_map' | 'compiler_optimizations' | 'pipeline_visualization' | 'hardware_emulation' | 'demo' | 'research_paper' | 'conclusion';
+export type DashboardView = 'features' | 'implementation' | 'memory_map' | 'compiler_optimizations' | 'pipeline_visualization' | 'demo' | 'conclusion';
 
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [view, setView] = useState<View>('landing');
-  const [dashboardView, setDashboardView] = useState<DashboardView>('abstract');
+  const [dashboardView, setDashboardView] = useState<DashboardView>('features');
 
   useEffect(() => {
     const loggedInUser = localStorage.getItem('riscv_currentUser');
@@ -50,19 +47,6 @@ const App: React.FC = () => {
   
   const renderDashboardContent = () => {
     switch (dashboardView) {
-      case 'abstract':
-        return (
-          <Section title="Project Abstract" icon={<BookOpenIcon />}>
-            <div className="text-slate-400 space-y-4 max-w-4xl">
-              <p>
-                This work presents the design and evaluation of an AI-accelerated RISC-V processor for edge computing applications. The standard RISC-V ISA is extended with custom instructions—Multiply-Accumulate (MAC), ReLU, Sigmoid, Tanh, and a specialized 3x3 Convolution—to significantly improve the performance and energy efficiency of neural network inference.
-              </p>
-              <p>
-                Through a hardware-software co-design approach, we developed a 5-stage pipelined core in SystemVerilog and an optimizing compiler backend to map C++ operators to the custom ISA. Simulation results demonstrate a ~12x speedup for key ML kernels compared to a baseline RISC-V core. Prototyping on a Xilinx PYNQ-Z2 FPGA validates the design's resource efficiency. This research confirms that targeted ISA extensions offer a compelling solution for high-performance, low-power ML inference on edge devices.
-              </p>
-            </div>
-          </Section>
-        );
       case 'features':
         return (
           <Section title="Key Features" icon={<ZapIcon />}>
@@ -162,16 +146,12 @@ const App: React.FC = () => {
         );
       case 'pipeline_visualization':
         return <PipelineVisualizer />;
-      case 'hardware_emulation':
-        return <HardwareEmulation />;
       case 'demo':
         return (
           <Section title="Interactive AI Generators" icon={<CodeIcon />}>
             <CodeGenerator />
           </Section>
         );
-      case 'research_paper':
-        return <ResearchPaper />;
       case 'conclusion':
         return (
            <Section title="Conclusion" icon={<ZapIcon />}>

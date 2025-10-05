@@ -1,10 +1,10 @@
+
 import React from 'react';
 import { CpuIcon } from './icons/CpuIcon';
 import { ZapIcon } from './icons/ZapIcon';
 import { CodeIcon } from './icons/CodeIcon';
 import { ChipIcon } from './icons/ChipIcon';
 import { ChartBarIcon } from './icons/ChartBarIcon';
-import { BookOpenIcon } from './icons/BookOpenIcon';
 import { ArchitectureDiagram } from './ArchitectureDiagram';
 
 interface LandingPageProps {
@@ -70,11 +70,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     icon={<ChipIcon />}
                     title="FPGA-Validated Design"
                     description="The processor core has been prototyped and validated on a Xilinx PYNQ-Z2 FPGA, proving its real-world viability."
-                />
-                <HighlightCard
-                    icon={<BookOpenIcon />}
-                    title="Publication-Ready"
-                    description="The project is documented with the rigor required for academic publication, including comparative analysis."
                 />
             </div>
         </section>

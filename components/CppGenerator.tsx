@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { generateAssemblyStream, AiResponseError } from '../services/geminiService';
 import { PerformanceChart } from './PerformanceChart';
@@ -60,351 +59,116 @@ const useDebounce = <T,>(value: T, delay: number): T => {
   return debouncedValue;
 };
 
-const examples = [
+type Example = {
+    name: string;
+    code: string;
+};
+
+type ExampleCategory = {
+    category: string;
+    examples: Example[];
+};
+
+const examples: ExampleCategory[] = [
   {
-    name: 'NN: Fully Connected Layer',
-    code: `// A complete, fully-connected neural network layer.
-// This is a core building block of MLPs and CNNs.
-// It performs Y = ReLU(W * X + B) where W is a weight matrix,
-// X is an input vector, and B is a bias vector.
-void dense_layer(float* Y, float* W, float* X, float* B, int M, int N) {
-  for (int i = 0; i < M; ++i) {
-    float accumulator = B[i]; // Start with the bias
-    for (int j = 0; j < N; ++j) {
-      // This loop is heavily optimized by the 'mac' instruction
-      accumulator += W[i * N + j] * X[j];
-    }
-    // The final result is passed through a ReLU activation
-    // which is optimized by the 'relu' instruction.
-    Y[i] = (accumulator > 0.0) ? accumulator : 0.0;
-  }
-}`
-  },
-  {
-    name: 'NN: 3x3 Convolution',
-    code: `// Simplified 2D Convolution with a 3x3 kernel.
-// Replaced by a single 'conv2d.3x3' instruction.
-float conv2d_3x3(float* input, float* kernel, int input_stride) {
-  float output = 0.0;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      output += input[i * input_stride + j] * kernel[i * 3 + j];
-    }
-  }
-  return output;
-}`
-  },
-    {
-    name: 'NN: 3x3 Depthwise Conv',
-    code: `// 3x3 Depthwise Convolution, common in efficient networks.
-// Replaced by a single 'dwconv.3x3' instruction.
-float dw_conv2d_3x3(float* input, float* kernel, int stride) {
-  float output = 0.0;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      output += input[i * stride + j] * kernel[i * 3 + j];
-    }
-  }
-  return output;
-}`
+    category: "Basic & Arithmetic",
+    examples: [
+      { name: "Sum Integers N to M", code: `int sum_range(int n, int m) {\n  int sum = 0;\n  for (int i = n; i <= m; ++i) sum += i;\n  return sum;\n}` },
+      { name: "Factorial (Loop)", code: `int factorial(int n) {\n  int res = 1;\n  for (int i = 2; i <= n; ++i) res *= i;\n  return res;\n}` },
+      { name: "Conditional Max Function", code: `int max_func(int a, int b) {\n  return a > b ? a : b;\n}` },
+      { name: "Switch Case Generator", code: `int get_value(int key) {\n  switch(key) {\n    case 1: return 100;\n    case 2: return 200;\n    case 3: return 300;\n    default: return -1;\n  }\n}` },
+      { name: "Bitwise Count Set Bits", code: `int countSetBits(int n) {\n  int count = 0;\n  while (n > 0) {\n    n &= (n - 1);\n    count++;\n  }\n  return count;\n}` },
+      { name: "Recursive Fibonacci", code: `int fibonacci(int n) {\n  if (n <= 1) return n;\n  return fibonacci(n - 1) + fibonacci(n - 2);\n}` },
+      { name: "Pointer Dereference & Add", code: `void add_to_value(int* p_value, int to_add) {\n  *p_value += to_add;\n}` },
+      { name: "Simple Array Sum", code: `int sum_array(int* arr, int size) {\n  int total = 0;\n  for (int i = 0; i < size; ++i) {\n    total += arr[i];\n  }\n  return total;\n}` },
+      { name: "Floating Point Sqrt", code: `float fp_sqrt(float num) {\n  return __builtin_sqrtf(num);\n}` },
+      { name: "Integer Division Function", code: `int divide(int a, int b) {\n  return a / b;\n}` },
+      { name: "Modulo Operation", code: `int modulo(int a, int b) {\n  return a % b;\n}` },
+      { name: "Bitwise Rotate Right", code: `unsigned int ror(unsigned int val, int shift) {\n  return (val >> shift) | (val << (32 - shift));\n}` },
+      { name: "Array Copy Function", code: `void copy_array(int* dst, int* src, int size) {\n  for (int i = 0; i < size; ++i) {\n    dst[i] = src[i];\n  }\n}` },
+      { name: "Vector-Scalar Multiply", code: `void vsmul(float* v, float s, int size) {\n  for (int i = 0; i < size; ++i) {\n    v[i] *= s;\n  }\n}` },
+      { name: "Absolute Value Function", code: `int absolute(int n) {\n  return (n < 0) ? -n : n;\n}` },
+      { name: "Unsigned Integer Max", code: `unsigned int umax(unsigned int a, unsigned int b) {\n  return (a > b) ? a : b;\n}` },
+      { name: "Compare Two Strings", code: `int string_compare(const char* s1, const char* s2) {\n  while (*s1 && (*s1 == *s2)) {\n    s1++;\n    s2++;\n  }\n  return *(const unsigned char*)s1 - *(const unsigned char*)s2;\n}` },
+      { name: "Compute Modulo N", code: `int compute_mod_n(int val, int n) {\n  return val % n;\n}` },
+      { name: "Simple Matrix Transpose", code: `void transpose(float* dst, float* src, int w, int h) {\n  for (int i = 0; i < h; ++i) {\n    for (int j = 0; j < w; ++j) {\n      dst[j * h + i] = src[i * w + j];\n    }\n  }\n}` },
+      { name: "Invert Bits Function", code: `unsigned int invert_bits(unsigned int n) {\n  return ~n;\n}` },
+    ]
   },
   {
-    name: 'NN: 2x2 Max Pooling',
-    code: `// 2x2 Max Pooling with a stride of 2.
-// Replaced by a single 'maxpool.2x2' instruction.
-float max_pool_2x2(float* input, int stride) {
-  float m0 = input[0];
-  float m1 = input[1];
-  float m2 = input[stride];
-  float m3 = input[stride+1];
-  float max_val = m0 > m1 ? m0 : m1;
-  float max_val2 = m2 > m3 ? m2 : m3;
-  return max_val > max_val2 ? max_val : max_val2;
-}`
-  },
-   {
-    name: 'NN: Batch Normalization',
-    code: `// Applies Batch Normalization to a single value.
-// gamma * (x - mean) / sqrt(variance + epsilon) + beta
-// This is compiled using standard FPU instructions.
-float batch_norm(float x, float mean, float variance, float gamma, float beta) {
-  const float epsilon = 1e-5f;
-  float inv_stddev = 1.0f / sqrtf(variance + epsilon);
-  return gamma * (x - mean) * inv_stddev + beta;
-}`
-  },
-  {
-    name: 'NN: Sigmoid Activation',
-    code: `// Applies the Sigmoid function element-wise to a vector.
-// Optimized with a single 'sigmoid' instruction.
-void sigmoid_vec(float* B, float* A, int N) {
-  for (int i = 0; i < N; ++i) {
-    B[i] = 1.0f / (1.0f + expf(-A[i]));
-  }
-}`
+    category: "Control Flow & Memory Access",
+    examples: [
+      { name: "Multi-Level Nested Loop", code: `int nested_loop_sum(int d1, int d2, int d3) {\n  int sum = 0;\n  for(int i=0; i<d1; ++i)\n    for(int j=0; j<d2; ++j)\n      for(int k=0; k<d3; ++k)\n        sum++;\n  return sum;\n}` },
+      { name: "Unrolled Loop For Array Sum", code: `int sum_array_unrolled(int* arr, int size) {\n  int sum = 0;\n  for (int i=0; i<size; i+=4) {\n    sum += arr[i];\n    sum += arr[i+1];\n    sum += arr[i+2];\n    sum += arr[i+3];\n  }\n  return sum;\n}` },
+      { name: "Memset Function", code: `void my_memset(void* ptr, int value, int num) {\n  unsigned char* p = (unsigned char*)ptr;\n  for (int i = 0; i < num; ++i) {\n    p[i] = (unsigned char)value;\n  }\n}` },
+      { name: "Custom Memcpy", code: `void my_memcpy(void* dst, const void* src, int num) {\n  char* d = (char*)dst;\n  const char* s = (const char*)src;\n  for (int i=0; i<num; ++i) d[i] = s[i];\n}` },
+      { name: "Stack-Based Local Variables", code: `int stack_vars() {\n  int a = 5;\n  int b = 10;\n  int c = a + b;\n  return c * 2;\n}` },
+      { name: "Efficient Memory Init", code: `void init_mem(int* mem, int size) {\n  for (int i = 0; i < size; ++i) mem[i] = i;\n}` },
+      { name: "Function Pointer Call", code: `int add(int a, int b) { return a+b; }\nint exec(int (*func)(int, int), int a, int b) {\n  return func(a, b);\n}` },
+      { name: "Branch Prediction Optimization", code: `int count_positives(int* arr, int size) {\n  int count = 0;\n  for (int i = 0; i < size; ++i) {\n    if (arr[i] > 0) count++; // This branch can be unpredictable\n  }\n  return count;\n}` },
+      { name: "Data Structure Access", code: `struct Point { int x, y; };\nint get_dist_sq(struct Point* p) {\n  return p->x * p->x + p->y * p->y;\n}` },
+      { name: "Volatile Memory Access", code: `void wait_on_flag(volatile int* flag) {\n  while (*flag == 0) { /* wait */ }\n}` },
+      { name: "Loop Unrolling For Speed", code: `void unroll_speed(float* a, float* b, int n) {\n  for(int i=0; i<n; i+=2) {\n    a[i] = b[i] * 2.0f;\n    a[i+1] = b[i+1] * 2.0f;\n  }\n}` },
+      { name: "Conditional Jump Optimization", code: `int conditional_jump(int a, int b) {\n  if (a > b) return a;\n  else return b;\n}` },
+      { name: "Inline Assembly Example", code: `int inline_asm() {\n  int a=10, b=20, sum;\n  // This is a conceptual example for the compiler\n  // to demonstrate understanding of inline assembly.\n  __asm__ ("add %0, %1, %2" : "=r"(sum) : "r"(a), "r"(b));\n  return sum;\n}` },
+      { name: "Simple Function Call Graph", code: `int func_b(int x) { return x * 2; }\nint func_a(int x) { return func_b(x) + 5; }` },
+      { name: "Cache Line Prefetch Optimization", code: `void prefetch_opt(int* data, int size) {\n  for (int i=0; i<size; ++i) {\n    // Conceptually, prefetch data for future iterations\n    __builtin_prefetch(&data[i+16], 0, 3);\n    data[i] *= 2;\n  }\n}` },
+      { name: "Generate Jump Table For Switch", code: `int jump_table(int x) {\n  switch(x) {\n    case 0: return 10;\n    case 1: return 20;\n    case 2: return 30;\n    case 3: return 40;\n    default: return 0;\n  }\n}` },
+      { name: "Pointer Arithmetic Loop", code: `int sum_ptr_arith(int* arr, int size) {\n  int sum = 0;\n  int* end = arr + size;\n  while(arr < end) {\n    sum += *arr++;\n  }\n  return sum;\n}` },
+      { name: "String Search Function", code: `const char* find_char(const char* s, char c) {\n  while(*s != '\\0') {\n    if (*s == c) return s;\n    s++;\n  }\n  return 0;\n}` },
+      { name: "Data Prefetching For Large Array", code: `void prefetch_large(float* a, float* b, int n) {\n  for (int i=0; i<n; ++i) {\n    __builtin_prefetch(&b[i+128], 0, 3);\n    a[i] = b[i] * 3.14f;\n  }\n}` },
+      { name: "Optimized Stack Push/Pop", code: `int func_with_stack() {\n  int x = 1, y = 2, z = 3;\n  return x+y+z;\n}` },
+    ]
   },
   {
-    name: 'NN: Tanh Activation',
-    code: `// Applies the Tanh function element-wise to a vector.
-// Optimized with a single 'tanh' instruction.
-void tanh_vec(float* B, float* A, int N) {
-  for (int i = 0; i < N; ++i) {
-    B[i] = tanhf(A[i]);
-  }
-}`
-  },
-   {
-    name: 'NN: Leaky ReLU Activation',
-    code: `// Leaky ReLU activation function.
-// This uses standard FPU instructions.
-void leaky_relu_vec(float* B, float* A, int N, float alpha) {
-  for (int i = 0; i < N; ++i) {
-    B[i] = (A[i] > 0.0f) ? A[i] : A[i] * alpha;
-  }
-}`
-  },
-  {
-    name: 'Vector: Dot Product',
-    code: `// Dot Product of two vectors.
-// Optimized with 'mac' instructions.
-float dot_product(float* A, float* B, int N) {
-  float result = 0.0;
-  for (int i = 0; i < N; ++i) {
-    result += A[i] * B[i];
-  }
-  return result;
-}`
-  },
-  {
-    name: 'Vector: SAXPY',
-    code: `// Single-Precision A*X + Y (SAXPY).
-// A core routine in linear algebra (BLAS).
-// Optimized with 'mac' instructions.
-void saxpy(float* Y, float* X, float a, int N) {
-  for (int i = 0; i < N; ++i) {
-    Y[i] = a * X[i] + Y[i];
-  }
-}`
-  },
-  {
-    name: 'Vector: Sum of Squares',
-    code: `// Calculates the sum of squares of a vector's elements.
-// Optimized with 'mac' instructions.
-float sum_of_squares(float* A, int N) {
-  float result = 0.0;
-  for (int i = 0; i < N; ++i) {
-    result += A[i] * A[i];
-  }
-  return result;
-}`
-  },
-  {
-    name: 'Vector: L2 Norm',
-    code: `// Calculates the L2 Norm (Euclidean length) of a vector.
-// This is sqrt(sum_of_squares).
-// Uses standard FPU instructions.
-float l2_norm(float* A, int N) {
-  float ss = 0.0;
-  for (int i = 0; i < N; ++i) {
-    ss += A[i] * A[i]; // Optimized with MAC
-  }
-  return sqrtf(ss);
-}`
-  },
-   {
-    name: 'Vector: Addition',
-    code: `// Adds two vectors element-wise.
-// Uses standard FPU fadd.s instructions.
-void vector_add(float* C, float* A, float* B, int N) {
-  for (int i = 0; i < N; ++i) {
-    C[i] = A[i] + B[i];
-  }
-}`
-  },
-  {
-    name: 'Vector: Scaling',
-    code: `// Scales a vector by a constant factor.
-// Uses standard FPU fmul.s instructions.
-void vector_scale(float* B, float* A, float scalar, int N) {
-  for (int i = 0; i < N; ++i) {
-    B[i] = A[i] * scalar;
-  }
-}`
-  },
-  {
-    name: 'Matrix: 5x5 Convolution',
-    code: `// 2D Convolution with a 5x5 kernel.
-// Implemented with a loop of 'mac' instructions.
-float conv2d_5x5(float* input, float* kernel, int stride) {
-  float output = 0.0;
-  for (int i = 0; i < 5; ++i) {
-    for (int j = 0; j < 5; ++j) {
-      output += input[i * stride + j] * kernel[i * 5 + j];
-    }
-  }
-  return output;
-}`
-  },
-   {
-    name: 'Matrix: Transpose (4x4)',
-    code: `// Transposes a 4x4 matrix.
-// Uses standard load/store instructions.
-void transpose_4x4(float* dst, float* src) {
-  for (int i = 0; i < 4; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      dst[j * 4 + i] = src[i * 4 + j];
-    }
-  }
-}`
-  },
-  {
-    name: 'Matrix: Matrix-Vector Multiply',
-    code: `// Matrix-Vector Multiplication with ReLU
-// C = A * B, then C = ReLU(C)
-// Optimized with 'mac' and 'relu' instructions.
-void mat_vec_relu(float* C, float* A, float* B, int M, int N) {
-  for (int i = 0; i < M; ++i) {
-    float sum = 0.0;
-    for (int j = 0; j < N; ++j) {
-      sum += A[i * N + j] * B[j];
-    }
-    C[i] = (sum > 0.0) ? sum : 0.0;
-  }
-}`
-  },
-  {
-    name: 'DSP: FIR Filter',
-    code: `// Finite Impulse Response (FIR) Filter.
-// A fundamental operation in digital signal processing.
-// Optimized with 'mac' instructions.
-float fir_filter(float* signal, float* coeffs, int length) {
-  float output = 0.0;
-  for (int i = 0; i < length; ++i) {
-    output += signal[i] * coeffs[i];
-  }
-  return output;
-}`
-  },
-  {
-    name: 'DSP: Moving Average',
-    code: `// Simple moving average filter.
-// Uses standard FPU fadd.s and fdiv.s.
-float moving_average(float* signal, int window_size) {
-  float sum = 0.0;
-  for (int i = 0; i < window_size; ++i) {
-    sum += signal[i];
-  }
-  return sum / (float)window_size;
-}`
-  },
-  {
-    name: 'Image: Grayscale Conversion',
-    code: `// Converts an RGB pixel to grayscale using luminosity method.
-// Uses standard FPU instructions.
-float rgb_to_gray(float r, float g, float b) {
-  return 0.299f * r + 0.587f * g + 0.114f * b;
-}`
-  },
-  {
-    name: 'Image: Sobel Operator (X)',
-    code: `// Applies a 3x3 Sobel kernel for horizontal edge detection.
-// This is a specialized convolution, optimized with 'conv2d.3x3'.
-float sobel_x(float* image_patch, int stride) {
-  const float kernel[9] = { -1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0 };
-  float result = 0.0;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      result += image_patch[i * stride + j] * kernel[i * 3 + j];
-    }
-  }
-  return result;
-}`
-  },
-  {
-    name: 'Math: Polynomial Eval',
-    code: `// Evaluates a 3rd degree polynomial using Horner's method.
-// P(x) = c3*x^3 + c2*x^2 + c1*x + c0
-// Optimized with 'mac' instructions.
-float poly_eval(float x, float* c) {
-  float result = c[3];
-  result = result * x + c[2];
-  result = result * x + c[1];
-  result = result * x + c[0];
-  return result;
-}`
-  },
-  {
-    name: 'Math: Vector Interpolation',
-    code: `// Linear interpolation between two vectors.
-// C = A * (1-t) + B * t
-// Uses standard FPU instructions.
-void lerp_vec(float* C, float* A, float* B, float t, int N) {
-  float one_minus_t = 1.0f - t;
-  for (int i = 0; i < N; ++i) {
-    C[i] = A[i] * one_minus_t + B[i] * t;
-  }
-}`
-  },
-  {
-    name: 'Sort: Find Max Value',
-    code: `// Finds the maximum value in a float array.
-// Uses standard FPU fgt.s and branch instructions.
-float find_max(float* A, int N) {
-  float max_val = A[0];
-  for (int i = 1; i < N; ++i) {
-    if (A[i] > max_val) {
-      max_val = A[i];
-    }
-  }
-  return max_val;
-}`
-  },
-    {
-    name: 'Sort: Bubble Sort Pass',
-    code: `// Performs a single pass of a bubble sort.
-// Uses standard FPU fgt.s, fmv.s, and branch instructions.
-void bubble_sort_pass(float* A, int N) {
-  for (int i = 0; i < N - 1; ++i) {
-    if (A[i] > A[i+1]) {
-      float temp = A[i];
-      A[i] = A[i+1];
-      A[i+1] = temp;
-    }
-  }
-}`
-  },
-  {
-    name: 'Stats: Mean Calculation',
-    code: `// Calculates the mean of a vector.
-// Uses standard FPU fadd.s and fdiv.s.
-float mean(float* A, int N) {
-  float sum = 0.0;
-  for (int i = 0; i < N; ++i) {
-    sum += A[i];
-  }
-  return sum / (float)N;
-}`
-  },
-  {
-    name: 'Stats: Variance Calculation',
-    code: `// Calculates the variance of a vector.
-// Optimized with 'mac' instructions for sum of squares.
-float variance(float* A, float mean, int N) {
-  float sum_sq_diff = 0.0;
-  for (int i = 0; i < N; ++i) {
-    float diff = A[i] - mean;
-    sum_sq_diff += diff * diff;
-  }
-  return sum_sq_diff / (float)N;
-}`
+    category: "AI/ML-Specific Assembly",
+    examples: [
+      { name: "Conv2d 3x3 (Int8)", code: `// 3x3 convolution on an 8-bit image patch.\n// This loop will be replaced by a single 'conv2d.3x3' instruction.\nint conv2d_3x3_i8(char* input, char* kernel, int stride) {\n  int sum = 0;\n  for(int i=0; i<3; ++i) {\n    for(int j=0; j<3; ++j) {\n      sum += input[i*stride + j] * kernel[i*3 + j];\n    }\n  }\n  return sum;\n}` },
+      { name: "Conv2d 3x3 (Float16)", code: `// 3x3 convolution on a 16-bit float image patch.\n// This will be replaced by a single 'conv2d.3x3' instruction.\nfloat conv2d_3x3_f16(_Float16* input, _Float16* kernel, int stride) {\n  float sum = 0.0f;\n  for(int i=0; i<3; ++i) {\n    for(int j=0; j<3; ++j) {\n      sum += input[i*stride + j] * kernel[i*3 + j];\n    }\n  }\n  return sum;\n}` },
+      { name: "MatrixMultiply 8x8 (Int8)", code: `// 8x8 integer matrix multiplication.\n// Optimized to use a loop of 'mac' instructions.\nvoid matmul_8x8_i8(char* C, char* A, char* B) {\n  for(int i=0; i<8; ++i) {\n    for(int j=0; j<8; ++j) {\n      int sum = 0;\n      for(int k=0; k<8; ++k) sum += A[i*8+k] * B[k*8+j];\n      C[i*8+j] = (char)sum;\n    }\n  }\n}` },
+      { name: "MatrixMultiply 16x16 (Float16)", code: `// 16x16 float16 matrix multiplication.\n// Optimized to use a loop of 'mac' instructions.\nvoid matmul_16x16_f16(_Float16* C, _Float16* A, _Float16* B) {\n  for(int i=0; i<16; ++i) {\n    for(int j=0; j<16; ++j) {\n      float sum = 0.0f;\n      for(int k=0; k<16; ++k) sum += A[i*16+k] * B[k*16+j];\n      C[i*16+j] = (_Float16)sum;\n    }\n  }\n}` },
+      { name: "Vector Dot Product", code: `// Dot product of two float vectors.\n// Optimized to use 'mac' instructions.\nfloat dot_product(float* a, float* b, int n) {\n  float sum = 0.0f;\n  for (int i=0; i<n; ++i) sum += a[i] * b[i];\n  return sum;\n}` },
+      { name: "ReLU Vector (Int8)", code: `// ReLU activation on a vector of 8-bit integers.\n// Optimized to use a loop of 'relu' instructions.\nvoid relu_vec_i8(char* data, int n) {\n  for (int i=0; i<n; ++i) {\n    if (data[i] < 0) data[i] = 0;\n  }\n}` },
+      { name: "ReLU Vector (Float16)", code: `// ReLU activation on a vector of 16-bit floats.\n// Optimized to use a loop of 'relu' instructions.\nvoid relu_vec_f16(_Float16* data, int n) {\n  for (int i=0; i<n; ++i) {\n    if (data[i] < 0.0f) data[i] = 0.0f;\n  }\n}` },
+      { name: "LeakyReLU Vector", code: `// Leaky ReLU activation function.\nvoid leaky_relu_vec(float* data, float alpha, int n) {\n  for (int i=0; i<n; ++i) {\n    data[i] = data[i] < 0 ? data[i] * alpha : data[i];\n  }\n}` },
+      { name: "Sigmoid Approx Vector", code: `// Sigmoid activation on a vector.\n// Optimized to use 'sigmoid' instructions.\nvoid sigmoid_vec(float* data, int n) {\n  for (int i=0; i<n; ++i) {\n    data[i] = 1.0f / (1.0f + __builtin_expf(-data[i]));\n  }\n}` },
+      { name: "Tanh Approx Vector", code: `// Tanh activation on a vector.\n// Optimized to use 'tanh' instructions.\nvoid tanh_vec(float* data, int n) {\n  for (int i=0; i<n; ++i) {\n    data[i] = __builtin_tanhf(data[i]);\n  }\n}` },
+      { name: "MaxPool 2x2 (Int8)", code: `// 2x2 Max Pooling for 8-bit integers.\n// Replaced by a single 'maxpool.2x2' instruction.\nchar maxpool_2x2_i8(char* input, int stride) {\n  char m0 = input[0];\n  char m1 = input[1];\n  char m2 = input[stride];\n  char m3 = input[stride+1];\n  char max1 = m0 > m1 ? m0 : m1;\n  char max2 = m2 > m3 ? m2 : m3;\n  return max1 > max2 ? max1 : max2;\n}` },
+      { name: "AveragePool 2x2", code: `// 2x2 Average Pooling.\nint avgpool_2x2_i8(char* input, int stride) {\n  return (input[0] + input[1] + input[stride] + input[stride+1]) / 4;\n}` },
+      { name: "BatchNormalization (Int8)", code: `// Batch Normalization for 8-bit integers.\nvoid batch_norm_i8(char* data, int scale, int offset, int n) {\n  for (int i=0; i<n; ++i) {\n    data[i] = (data[i] * scale) + offset;\n  }\n}` },
+      { name: "Quantization (Int16 to Int8)", code: `// Quantization from 16-bit to 8-bit integers by right-shifting.\nvoid quantize_i16_i8(char* dst, short* src, int shift, int n) {\n  for (int i=0; i<n; ++i) {\n    dst[i] = (char)(src[i] >> shift);\n  }\n}` },
+      { name: "Dequantization (Int8 to Float)", code: `// Dequantization from 8-bit integer to float.\nvoid dequantize_i8_f32(float* dst, char* src, float scale, int n) {\n  for (int i=0; i<n; ++i) {\n    dst[i] = (float)src[i] * scale;\n  }\n}` },
+      { name: "Softmax Approx Vector", code: `// Softmax activation function.\nvoid softmax(float* data, int n) {\n  float max_val = data[0];\n  for (int i=1; i<n; ++i) if(data[i] > max_val) max_val = data[i];\n  float sum = 0.0f;\n  for (int i=0; i<n; ++i) {\n    data[i] = __builtin_expf(data[i] - max_val);\n    sum += data[i];\n  }\n  for (int i=0; i<n; ++i) data[i] /= sum;\n}` },
+      { name: "FullyConnectedLayer (Int8)", code: `// A fully connected layer with 8-bit integers.\nvoid fc_layer_i8(char* out, char* in, char* weights, int in_len, int out_len) {\n  for (int o=0; o<out_len; ++o) {\n    int sum = 0;\n    for(int i=0; i<in_len; ++i) sum += in[i] * weights[o*in_len+i];\n    out[o] = (char)sum;\n  }\n}` },
+      { name: "ElementwiseAdd Vector", code: `// Element-wise addition of two vectors.\nvoid add_vec(float* dst, float* src1, float* src2, int n) {\n  for (int i=0; i<n; ++i) dst[i] = src1[i] + src2[i];\n}` },
+      { name: "ElementwiseMultiply Vector", code: `// Element-wise multiplication of two vectors.\nvoid mul_vec(float* dst, float* src1, float* src2, int n) {\n  for (int i=0; i<n; ++i) dst[i] = src1[i] * src2[i];\n}` },
+      { name: "LoadWeights From Memory", code: `// A routine to load weights from main memory into a local buffer.\nvoid load_weights(float* local_buf, float* main_mem, int n) {\n  for(int i=0; i<n; ++i) local_buf[i] = main_mem[i];\n}` },
+      { name: "BiasAddition Vector", code: `// Adds a bias vector to another vector.\nvoid add_bias(float* data, float* bias, int n) {\n  for(int i=0; i<n; ++i) data[i] += bias[i];\n}` },
+      { name: "Fused Conv-ReLU", code: `// A fused operation of 3x3 convolution and ReLU.\n// Compiler optimizes this to a 'conv2d.3x3' followed by 'relu'.\nfloat conv_relu_fused(float* input, float* kernel, int stride) {\n  float sum = 0.0f;\n  for(int i=0; i<3; ++i) \n    for(int j=0; j<3; ++j) \n      sum += input[i*stride+j] * kernel[i*3+j];\n  return sum > 0 ? sum : 0;\n}` },
+      { name: "Fused MatrixMultiply-Bias", code: `// Fused matrix-vector multiply and bias addition.\nvoid matvec_bias(float* out, float* mat, float* vec, float* bias, int R, int C) {\n  for (int i=0; i<R; ++i) {\n    float sum = bias[i];\n    for (int j=0; j<C; ++j) sum += mat[i*C+j] * vec[j];\n    out[i] = sum;\n  }\n}` },
+      { name: "AssemblyForGEMM", code: `// General Matrix Multiplication (GEMM).\nvoid gemm(float* C, float* A, float* B, int M, int N, int K) {\n  for (int i=0; i<M; ++i)\n    for (int j=0; j<K; ++j) {\n      C[i*K+j] = 0;\n      for (int l=0; l<N; ++l)\n        C[i*K+j] += A[i*N+l] * B[l*K+j];\n    }\n}` },
+      { name: "AssemblyForImageResizing", code: `// Simple nearest-neighbor image resizing.\nvoid resize_nn(char* dst, char* src, int sw, int sh, int dw, int dh) {\n  float x_ratio = (float)sw / dw;\n  float y_ratio = (float)sh / dh;\n  for (int i=0; i<dh; ++i) {\n    for (int j=0; j<dw; ++j) {\n      int px = (int)(j * x_ratio);\n      int py = (int)(i * y_ratio);\n      dst[i*dw+j] = src[py*sw+px];\n    }\n  }\n}` },
+      { name: "AssemblyForRMSNorm", code: `// RMS Normalization layer.\nvoid rms_norm(float* o, float* x, float* w, int n) {\n  float ss = 0.0f;\n  for(int j=0; j<n; ++j) ss += x[j] * x[j];\n  ss = ss/n + 1e-5f;\n  ss = 1.0f / __builtin_sqrtf(ss);\n  for(int j=0; j<n; ++j) o[j] = w[j] * (ss * x[j]);\n}` },
+      { name: "AssemblyForLayerNorm", code: `// Layer Normalization.\nvoid layer_norm(float* o, float* x, float* w, float* b, int n) {\n  float mean = 0.0f;\n  for(int j=0; j<n; ++j) mean += x[j];\n  mean /= n;\n  float variance = 0.0f;\n  for(int j=0; j<n; ++j) variance += (x[j]-mean)*(x[j]-mean);\n  variance /= n;\n  float inv_std = 1.0f / __builtin_sqrtf(variance + 1e-5f);\n  for(int j=0; j<n; ++j) o[j] = w[j] * (x[j]-mean) * inv_std + b[j];\n}` },
+    ]
   },
 ];
+
+
+const findExample = (name: string): Example | undefined => {
+    for (const category of examples) {
+        const example = category.examples.find(ex => ex.name === name);
+        if (example) return example;
+    }
+    return undefined;
+};
+
 
 const MAX_CODE_LENGTH = 4096;
 
 export const CppGenerator: React.FC = () => {
-    const [activeExample, setActiveExample] = useState(examples[0].name);
-    const [customCode, setCustomCode] = useState(examples[0].code);
+    const [activeExample, setActiveExample] = useState(examples[0].examples[0].name);
+    const [customCode, setCustomCode] = useState(examples[0].examples[0].code);
     const [assemblyCode, setAssemblyCode] = useState('');
     const [streamingOutput, setStreamingOutput] = useState('');
     const [instructionCount, setInstructionCount] = useState<{ standard: number; custom: number } | null>(null);
@@ -451,15 +215,26 @@ export const CppGenerator: React.FC = () => {
     }, [debouncedCustomCode]);
 
     const handleExampleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const example = examples.find(ex => ex.name === e.target.value);
+        if (e.target.value === "Custom Code") {
+            setActiveExample("Custom Code");
+            setCustomCode('');
+            setAssemblyCode('');
+            setStreamingOutput('');
+            setError(null);
+            setInstructionCount(null);
+            setShowVisualizer(false);
+            return;
+        }
+
+        const example = findExample(e.target.value);
         if (example) {
-        setActiveExample(example.name);
-        setCustomCode(example.code);
-        setAssemblyCode('');
-        setStreamingOutput('');
-        setError(null);
-        setInstructionCount(null);
-        setShowVisualizer(false);
+            setActiveExample(example.name);
+            setCustomCode(example.code);
+            setAssemblyCode('');
+            setStreamingOutput('');
+            setError(null);
+            setInstructionCount(null);
+            setShowVisualizer(false);
         }
     };
 
@@ -521,19 +296,29 @@ export const CppGenerator: React.FC = () => {
     return (
         <div className="animate-fade-in" style={{animationDuration: '0.3s'}}>
           <p className="text-slate-400 mb-4">
-            Select a C++ code example or write your own to see how it's translated into our custom RISC-V assembly. The AI compiler will automatically apply optimizations and use the custom ISA extensions where possible.
+            This AI-powered compiler translates C++ code into our custom RISC-V assembly. It automatically recognizes patterns that can be accelerated by the custom hardware instructions (like `conv2d.3x3` or `mac`). Select a C++ example or write your own to see the optimized assembly and performance gains.
           </p>
           <div className="grid md:grid-cols-2 gap-8">
             <div>
               <div className="mb-4">
                 <label htmlFor="example-select" className="block text-sm font-medium text-slate-300 mb-2">Select an Example</label>
                 <select id="example-select" value={activeExample} onChange={handleExampleChange} className="w-full p-3 font-mono text-sm bg-slate-900 text-slate-100 rounded-md border border-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors">
-                  {examples.map(ex => <option key={ex.name} value={ex.name}>{ex.name}</option>)}
+                  {examples.map(category => (
+                    <optgroup key={category.category} label={category.category}>
+                        {category.examples.map(ex => (
+                            <option key={ex.name} value={ex.name}>{ex.name}</option>
+                        ))}
+                    </optgroup>
+                  ))}
+                  <option value="Custom Code">Custom Code</option>
                 </select>
               </div>
               <div className="mb-4">
-                <label htmlFor="cpp-code" className="block text-sm font-medium text-slate-300 mb-2">Custom C++ Code</label>
-                <textarea id="cpp-code" value={customCode} onChange={(e) => setCustomCode(e.target.value)} onKeyDown={handleKeyDown} className={`w-full h-[400px] p-3 font-mono text-sm bg-slate-900 text-slate-100 rounded-md border focus:outline-none focus:ring-2 transition-colors ${validationError ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-cyan-500'}`} spellCheck="false" aria-invalid={!!validationError} aria-describedby={validationError ? "validation-error" : undefined} />
+                <label htmlFor="cpp-code" className="block text-sm font-medium text-slate-300 mb-2">C++ Code Input</label>
+                <textarea id="cpp-code" value={customCode} onChange={(e) => {
+                    setCustomCode(e.target.value);
+                    setActiveExample("Custom Code");
+                }} onKeyDown={handleKeyDown} className={`w-full h-[400px] p-3 font-mono text-sm bg-slate-900 text-slate-100 rounded-md border focus:outline-none focus:ring-2 transition-colors ${validationError ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-cyan-500'}`} spellCheck="false" aria-invalid={!!validationError} aria-describedby={validationError ? "validation-error" : undefined} />
                 {validationError && <p id="validation-error" className="mt-2 text-sm text-red-400" role="alert">{validationError}</p>}
               </div>
             </div>
